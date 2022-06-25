@@ -1,0 +1,26 @@
+{
+  "files": {
+    "main.css": "/Africa-Cuisine-NFT-Marketplace/static/css/main.a174681c.chunk.css",
+    "main.js": "/Africa-Cuisine-NFT-Marketplace/static/js/main.0ec62257.chunk.js",
+    "main.js.map": "/Africa-Cuisine-NFT-Marketplace/static/js/main.0ec62257.chunk.js.map",
+    "runtime-main.js": "/Africa-Cuisine-NFT-Marketplace/static/js/runtime-main.7e8e6cf4.js",
+    "runtime-main.js.map": "/Africa-Cuisine-NFT-Marketplace/static/js/runtime-main.7e8e6cf4.js.map",
+    "static/css/2.c020a12c.chunk.css": "/Africa-Cuisine-NFT-Marketplace/static/css/2.c020a12c.chunk.css",
+    "static/js/2.d20eb30b.chunk.js": "/Africa-Cuisine-NFT-Marketplace/static/js/2.d20eb30b.chunk.js",
+    "static/js/2.d20eb30b.chunk.js.map": "/Africa-Cuisine-NFT-Marketplace/static/js/2.d20eb30b.chunk.js.map",
+    "static/js/3.c2b5b670.chunk.js": "/Africa-Cuisine-NFT-Marketplace/static/js/3.c2b5b670.chunk.js",
+    "static/js/3.c2b5b670.chunk.js.map": "/Africa-Cuisine-NFT-Marketplace/static/js/3.c2b5b670.chunk.js.map",
+    "index.html": "/Africa-Cuisine-NFT-Marketplace/index.html",
+    "static/css/2.c020a12c.chunk.css.map": "/Africa-Cuisine-NFT-Marketplace/static/css/2.c020a12c.chunk.css.map",
+    "static/css/main.a174681c.chunk.css.map": "/Africa-Cuisine-NFT-Marketplace/static/css/main.a174681c.chunk.css.map",
+    "static/js/2.d20eb30b.chunk.js.LICENSE.txt": "/Africa-Cuisine-NFT-Marketplace/static/js/2.d20eb30b.chunk.js.LICENSE.txt",
+    "static/media/bootstrap-icons.css": "/Africa-Cuisine-NFT-Marketplace/static/media/bootstrap-icons.c1d7432e.woff"
+  },
+  "entrypoints": [
+    "static/js/runtime-main.7e8e6cf4.js",
+    "static/css/2.c020a12c.chunk.css",
+    "static/js/2.d20eb30b.chunk.js",
+    "static/css/main.a174681c.chunk.css",
+    "static/js/main.0ec62257.chunk.js"
+  ]
+}
