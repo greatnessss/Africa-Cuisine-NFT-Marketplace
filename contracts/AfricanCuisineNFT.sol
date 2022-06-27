@@ -15,8 +15,6 @@ contract AfricanCuisineNFT is ERC721, ERC721Enumerable, ERC721URIStorage, Ownabl
     constructor() ERC721("AfricanCuisineNFT", "ACNFT") {
     }
 
-    uint256 owners = 0;
-
     struct Image {
         uint256 tokenId;
         address payable seller;
@@ -31,7 +29,7 @@ contract AfricanCuisineNFT is ERC721, ERC721Enumerable, ERC721URIStorage, Ownabl
 
     event Sold(address seller, address buyer, uint tokenId);
     
-    event Sell(address seller, uint tokenId);
+    event ListTokenForSale(address seller, uint tokenId);
 
     // mint an NFt
     function safeMint(string memory uri, uint256 price)
@@ -58,9 +56,8 @@ contract AfricanCuisineNFT is ERC721, ERC721Enumerable, ERC721URIStorage, Ownabl
         require(msg.sender == ownerOf(tokenId) || msg.sender == getApproved(tokenId), "Only the owner or an approved operator can perform this action");
         require(to != address(0), "Enter a valid address");
         _transfer(from, to, tokenId);
-        images[tokenId].owner = payable(to);
-        owners++;
-    }
+        images[tokenId].owner = payable(to);       
+    }  
 
     //Create NFT Functionality
     function createImage(uint256 tokenId, uint256 price) private {
@@ -76,15 +73,9 @@ contract AfricanCuisineNFT is ERC721, ERC721Enumerable, ERC721URIStorage, Ownabl
     }
 
     //Buy NFT Functionality
-    function buyImage(uint256 tokenId) public payable {
-        require(tokenId >= 0, "Enter valid token id");
-        require(msg.sender != images[tokenId].seller, "You can't buy your own NFT");
+    function buyImage(uint256 tokenId) public payable canBuyNFT(tokenId){
         uint256 price = images[tokenId].price;
         address seller = images[tokenId].seller;
-        require(
-            msg.value == price,
-            "Please submit the asking price in order to complete the purchase"
-        );
         images[tokenId].owner = payable(msg.sender);
         images[tokenId].sold = true;
         images[tokenId].seller = payable(address(0));
@@ -95,6 +86,7 @@ contract AfricanCuisineNFT is ERC721, ERC721Enumerable, ERC721URIStorage, Ownabl
         emit Sold(seller, msg.sender, tokenId);
         
     }
+
 
     //Sell NFT Functionality
     function sellImage(uint256 tokenId) public payable {
@@ -108,7 +100,7 @@ contract AfricanCuisineNFT is ERC721, ERC721Enumerable, ERC721URIStorage, Ownabl
         images[tokenId].owner = payable(address(this));
 
         _transfer(msg.sender, address(this), tokenId);
-        emit Sell(msg.sender, tokenId);
+        emit ListTokenForSale(msg.sender, tokenId);
     }
 
     function getImage(uint256 tokenId) public view returns (Image memory) {
@@ -119,9 +111,6 @@ contract AfricanCuisineNFT is ERC721, ERC721Enumerable, ERC721URIStorage, Ownabl
         return _tokenIdCounter.current();
     }
 
-    function getOwners() public view returns (uint256) {
-        return owners;
-    }
 
    function _beforeTokenTransfer(
         address from,
@@ -154,5 +143,15 @@ contract AfricanCuisineNFT is ERC721, ERC721Enumerable, ERC721URIStorage, Ownabl
         returns (bool)
     {
         return super.supportsInterface(interfaceId);
+    }
+
+    modifier canBuyNFT(uint tokenId){
+        require(tokenId >= 0, "Enter valid token id");
+        require(msg.sender != images[tokenId].seller, "You can't buy your own NFT");
+        require(
+            msg.value == images[tokenId].price,
+            "Please submit the asking price in order to complete the purchase"
+        );
+        _;
     }
 }
