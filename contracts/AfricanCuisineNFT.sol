@@ -11,11 +11,16 @@ contract AfricanCuisineNFT is ERC721, ERC721Enumerable, ERC721URIStorage, Ownabl
     using Counters for Counters.Counter;
 
     Counters.Counter private _tokenIdCounter;
+    Counters.Counter private _tradeCount;
 
+    uint mintFee;
+    // min value to start implementing a mintFee
+    uint implementFee = 100;  
+
+    bool public paused; 
+    string public pauseReason;
     constructor() ERC721("AfricanCuisineNFT", "ACNFT") {
     }
-
-    uint256 owners = 0;
 
     struct Image {
         uint256 tokenId;
@@ -27,24 +32,46 @@ contract AfricanCuisineNFT is ERC721, ERC721Enumerable, ERC721URIStorage, Ownabl
 
     mapping(uint256 => Image) private images;
 
+    mapping(uint => string) private reason;
+    mapping(string => bool) private takenUri;
     event Create(address seller, uint tokenId);
 
     event Sold(address seller, address buyer, uint tokenId);
     
     event Sell(address seller, uint tokenId);
 
+    event Deleted(string reason, uint tokenId);
+    
+    event Pause(bool paused);
+
+    modifier exist(uint tokenId) {
+        require(_exists(tokenId), "Enter valid token id");
+        _;
+    }
+
+    modifier isPause(){
+        require(!paused, "Transactions have been paused");
+        _;
+    }
     // mint an NFt
     function safeMint(string memory uri, uint256 price)
         public
-        payable
+        payable isPause
         returns (uint256)
     {
         require(bytes(uri).length > 0, "Enter valid uri");
+        require(!takenUri[uri], "URI already in use");
         require(price > 0, "Price must be at least 1 wei");
         uint256 tokenId = _tokenIdCounter.current();
+        if(_tradeCount.current() >= implementFee){
+            mintFee = 1 ether;
+            require(msg.value == mintFee, "You need to pay to mint");
+            (bool success,) = payable(owner()).call{value: mintFee}("");
+            require(success, "Failed to pay mint fee");
+        }
         _tokenIdCounter.increment();
+        takenUri[uri] = true;
         _mint(msg.sender, tokenId);
-
         _setTokenURI(tokenId, uri);
         createImage(tokenId, price);
         emit Create(msg.sender, tokenId);
@@ -53,13 +80,13 @@ contract AfricanCuisineNFT is ERC721, ERC721Enumerable, ERC721URIStorage, Ownabl
     // NFT Transfer Functionality
 
     function makeTransfer
-    (address from, address to, uint256 tokenId)public{
-        require(tokenId >= 0, "Enter valid token id");
+    (address to, uint256 tokenId)public exist(tokenId) isPause(){
         require(msg.sender == ownerOf(tokenId) || msg.sender == getApproved(tokenId), "Only the owner or an approved operator can perform this action");
         require(to != address(0), "Enter a valid address");
-        _transfer(from, to, tokenId);
+        require(images[tokenId].sold, "Token is currently on sale");
+        _transfer(msg.sender, to, tokenId);
         images[tokenId].owner = payable(to);
-        owners++;
+        _tradeCount.increment();
     }
 
     //Create NFT Functionality
@@ -76,8 +103,8 @@ contract AfricanCuisineNFT is ERC721, ERC721Enumerable, ERC721URIStorage, Ownabl
     }
 
     //Buy NFT Functionality
-    function buyImage(uint256 tokenId) public payable {
-        require(tokenId >= 0, "Enter valid token id");
+    function buyImage(uint256 tokenId) public payable exist(tokenId) isPause(){
+        
         require(msg.sender != images[tokenId].seller, "You can't buy your own NFT");
         uint256 price = images[tokenId].price;
         address seller = images[tokenId].seller;
@@ -88,30 +115,57 @@ contract AfricanCuisineNFT is ERC721, ERC721Enumerable, ERC721URIStorage, Ownabl
         images[tokenId].owner = payable(msg.sender);
         images[tokenId].sold = true;
         images[tokenId].seller = payable(address(0));
+        images[tokenId].price = 0;
+        _tradeCount.increment();
         _transfer(address(this), msg.sender, tokenId);
-        uint amount = msg.value;
-        (bool success,) = seller.call{value: amount}("");
+
+        (bool success,) = seller.call{value: price}("");
         require(success, "Payment failed");
         emit Sold(seller, msg.sender, tokenId);
         
     }
 
     //Sell NFT Functionality
-    function sellImage(uint256 tokenId) public payable {
-        require(tokenId >= 0, "Enter valid token id");
+    function sellImage(uint256 tokenId) public payable exist(tokenId) isPause() {
+        Image storage currentImage = images[tokenId];
         require(
-            images[tokenId].owner == msg.sender,
+            currentImage.owner == msg.sender,
             "Only the owner of this NFT can perform this operation"
         );
-        images[tokenId].sold = false;
-        images[tokenId].seller = payable(msg.sender);
-        images[tokenId].owner = payable(address(this));
+        require( currentImage.seller == address(0), "NFT is already on sale");
+        require(currentImage.sold, "NFT is already on sale");
+        currentImage.sold = false;
+        currentImage.seller = payable(msg.sender);
+        currentImage.owner = payable(address(this));
 
         _transfer(msg.sender, address(this), tokenId);
         emit Sell(msg.sender, tokenId);
     }
 
-    function getImage(uint256 tokenId) public view returns (Image memory) {
+    function pause(string memory _pauseReason) external onlyOwner {
+        require(!paused, "Already paused");
+        require(bytes(_pauseReason).length > 0, "Invalid pause reason");
+        paused = true;
+        pauseReason = _pauseReason;
+        emit Pause(paused);
+    }
+
+    function unPause() external onlyOwner {
+        require(paused, "Not paused");
+        paused = false;
+        pauseReason = "";
+        emit Pause(paused);
+    }
+
+    function removeImage(uint tokenId, string memory _reason) public payable exist(tokenId) onlyOwner{
+        require(bytes(_reason).length > 0, "Enter a valid reason");
+        reason[tokenId] = _reason;
+        delete images[tokenId];
+        _burn(tokenId);
+        emit Deleted(_reason, tokenId);
+    }
+
+    function getImage(uint256 tokenId) public view exist(tokenId) returns (Image memory) {
         return images[tokenId];
     }
 
@@ -119,8 +173,8 @@ contract AfricanCuisineNFT is ERC721, ERC721Enumerable, ERC721URIStorage, Ownabl
         return _tokenIdCounter.current();
     }
 
-    function getOwners() public view returns (uint256) {
-        return owners;
+    function getTradeCount() public view returns (uint256) {
+        return _tradeCount.current();
     }
 
    function _beforeTokenTransfer(
